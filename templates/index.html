@@ -1,0 +1,49 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <style>
+        #log-container, #packet-container{
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Real-Time Data Update</h1>
+    <h2>Logs</h2>
+    <div id="log-container"></div>
+    <script>
+        const LogSource = new EventSource('/logs');
+        LogSource.onmessage = function(event){
+            console.log(event.logs);
+            const container = document.getElementById('log-container');
+            const message = document.createElement('div');
+            message.textContent = JSON.parse(event.data).event;
+            container.appendChild(message);
+            container.scrollTop = container.scrollHeight;
+        };
+    </script>
+
+    <h2>Packets</h2>
+    <div id="packet-container"></div>
+    <script>
+        const PakcetSource = new EventSource('/packets');
+        PakcetSource.onmessage = function(event){
+            console.log(event.packets);
+            const container = document.getElementById('packet-container');
+            const message = document.createElement('div');
+            message.textContent = JSON.parse(event.data).event;
+            container.appendChild(message);
+            container.scrollTop = container.scrollHeight;
+        };
+    </script>
+
+</body>
+</html>
