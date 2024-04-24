@@ -6,44 +6,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test</title>
     <style>
-        #log-container, #packet-container{
-            height: 200px;
+        #chart-container{
+            width: 50%;
+            margin: 0 auto;
+        }
+
+        canvas{
+            width: 100%;
+            height: 500px;
+        }
+
+        .row{
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .top-titles h1 {
+            width: 50%;
+            text-align: left;
+        }
+
+        .top-titles h1:last-child{
+            text-align: right;
+        }
+
+        .container {
+            display: flex; 
+            align-items: center; 
+            height: 150px; 
+            border: 1px solid #ccc; 
+        }
+        #previous-log-container, #previous-packet-container, #zerocopy-log-container, #zerocopy-packet-container{
+            height: 150px;
             overflow-y: scroll;
             border: 1px solid #ccc;
             padding: 5px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #previous-log-container, #previous-packet-container {
+            border-right: 2px solid black; /* 중간 선 표현 */
+        }
+        h2 {
+            width: 100%;
+            text-align: center;
         }
     </style>
 </head>
 
+<script>
+    const LogSource = new EventSource('/logs');
+    LogSource.onmessage = function(event){
+        console.log(event.logs);
+        const container = document.getElementById('previous-log-container');
+        const message = document.createElement('div');
+        message.textContent = JSON.parse(event.data).event;
+        container.appendChild(message);
+        container.scrollTop = container.scrollHeight;
+    };
+</script>
+
+<script>
+    const PakcetSource = new EventSource('/packets');
+    PakcetSource.onmessage = function(event){
+        console.log(event.packets);
+        const container = document.getElementById('previous-packet-container');
+        const message = document.createElement('div');
+        message.textContent = JSON.parse(event.data).event;
+        container.appendChild(message);
+        container.scrollTop = container.scrollHeight;
+    };
+</script>
+
 <body>
-    <h1>Real-Time Data Update</h1>
-    <h2>Logs</h2>
-    <div id="log-container"></div>
+    <div class="row top-titles">
+        <h1 class="title">Previous</h1>
+        <h1 class="title">Zero-Copy</h1>
+    </div>
+
+    <div class="row">
+        <div id="chart-container">
+            <canvas id="memoryUsageChart"></canvas>
+        </div>
+        <div id="chart-container">
+            <!-- Zero Copy Code 추가 예정-->
+        </div>
+    </div>
+
+    <div id="container">
+        <div class="row">
+            <div id="previous-log-container"></div>
+            <div id="zerocopy-log-container"></div>
+        </div>
+    </div>
+    <div id="container">
+        <div class="row">
+            <div id="previous-packet-container"></div>
+            <div id="zerocopy-packet-container"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const LogSource = new EventSource('/logs');
-        LogSource.onmessage = function(event){
-            console.log(event.logs);
-            const container = document.getElementById('log-container');
-            const message = document.createElement('div');
-            message.textContent = JSON.parse(event.data).event;
-            container.appendChild(message);
-            container.scrollTop = container.scrollHeight;
+        const ctx = document.getElementById('memoryUsageChart').getContext('2d');
+        const memoryUsageChart = new Chart(ctx, {
+            type: 'line',
+            data : {
+                labels:[],
+                datasets: [{
+                    label: 'Memory Usage (%)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: [],
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'CPU Usage (%)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    data: [],
+                    yAxisID: 'y'
+                },
+                ]
+            },
+            options: {
+                scales: {
+                    xAxes: [{
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            displayFormats: {
+                                minute: 'h:mm a'
+                            }
+                        }
+                    }],
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+    
+        const metricSource = new EventSource('/system/metrics');
+        metricSource.onmessage = function(event){
+            const data = JSON.parse(event.data);
+            const currentTime = new Date().toLocaleTimeString();
+            // 차트에 데이터 및 레이블 추가
+            if (memoryUsageChart.data.labels.length > 30) {
+                memoryUsageChart.data.labels.shift();
+                memoryUsageChart.data.datasets.forEach(dataset => {
+                    dataset.data.shift();
+                })
+            }
+            memoryUsageChart.data.labels.push(currentTime);
+            memoryUsageChart.data.datasets[0].data.push(data['Memory Usage']);
+            memoryUsageChart.data.datasets[1].data.push(data['CPU Usage']);
+            memoryUsageChart.update();
         };
     </script>
-
-    <h2>Packets</h2>
-    <div id="packet-container"></div>
-    <script>
-        const PakcetSource = new EventSource('/packets');
-        PakcetSource.onmessage = function(event){
-            console.log(event.packets);
-            const container = document.getElementById('packet-container');
-            const message = document.createElement('div');
-            message.textContent = JSON.parse(event.data).event;
-            container.appendChild(message);
-            container.scrollTop = container.scrollHeight;
-        };
-    </script>
-
 </body>
 </html>
