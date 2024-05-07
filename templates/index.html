@@ -6,72 +6,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test</title>
     <style>
-        #chart-container{
-            width: 50%;
-            margin: 0 auto;
-        }
-
-        canvas{
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
             width: 100%;
-            height: 500px;
         }
-
-        .row{
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .top-titles h1 {
-            width: 50%;
-            text-align: left;
-        }
-
-        .top-titles h1:last-child{
-            text-align: right;
-        }
-
+        h2 { text-align:center;}
+        h3 { text-align:left;}
         .container {
-            display: flex; 
-            align-items: center; 
-            height: 150px; 
-            border: 1px solid #ccc; 
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 0.5fr 0.5fr;
+            grid-template-areas:
+                "title1 title2" 
+                "canvas1 canvas2"
+                "prev_status zero_status"
+                "prev_log zero_log"
+                "logs1 logs2"
+                "prev_packet zero_packet"
+                "packets1 packets2";
+            height: 85vh;
+            width: 48vw;
+            grid-gap: 10px;
         }
-        #previous-log-container, #previous-packet-container, #zerocopy-log-container, #zerocopy-packet-container{
-            height: 150px;
+        #memoryUsageChart-Previous {
+            grid-area: canvas1;
+        }
+        
+        #memoryUsageChart-ZeroCopy {
+            grid-area: canvas2;
+        }        
+        .canvas{
+            width: 100%;
+            height: 20vh;
+        }
+
+        .scrollable-box {
             overflow-y: scroll;
             border: 1px solid #ccc;
             padding: 5px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
+            height: 120px; 
         }
-        #previous-log-container, #previous-packet-container {
-            border-right: 2px solid black; /* 중간 선 표현 */
+
+        #previous-log-container {
+            grid-area: logs1;
         }
-        h2 {
-            width: 100%;
-            text-align: center;
+        
+        #zerocopy-log-container {
+            grid-area: logs2;
+        }
+        
+        #previous-packet-container {
+            grid-area: packets1;
+        }
+        
+        #zerocopy-packet-container {
+            grid-area: packets2;
         }
     </style>
 </head>
 
 <script>
-    const LogSource = new EventSource('/logs');
+    const LogSource = new EventSource('/previous_logs');
     LogSource.onmessage = function(event){
-        console.log(event.logs);
         const container = document.getElementById('previous-log-container');
         const message = document.createElement('div');
         message.textContent = JSON.parse(event.data).event;
         container.appendChild(message);
         container.scrollTop = container.scrollHeight;
     };
-</script>
-
-<script>
-    const PakcetSource = new EventSource('/packets');
+    const LogSource2 = new EventSource('/zerocopy_logs');
+    LogSource2.onmessage = function(event){
+        const container = document.getElementById('zerocopy-log-container');
+        const message = document.createElement('div');
+        message.textContent = JSON.parse(event.data).event;
+        container.appendChild(message);
+        container.scrollTop = container.scrollHeight;
+    };
+    const PakcetSource = new EventSource('/previous_packets');
     PakcetSource.onmessage = function(event){
-        console.log(event.packets);
         const container = document.getElementById('previous-packet-container');
+        const message = document.createElement('div');
+        message.textContent = JSON.parse(event.data).event;
+        container.appendChild(message);
+        container.scrollTop = container.scrollHeight;
+    };
+    const PakcetSource2 = new EventSource('/zerocopy_packets');
+    PakcetSource2.onmessage = function(event){
+        const container = document.getElementById('zerocopy-packet-container');
         const message = document.createElement('div');
         message.textContent = JSON.parse(event.data).event;
         container.appendChild(message);
@@ -80,37 +103,59 @@
 </script>
 
 <body>
-    <div class="row top-titles">
-        <h1 class="title">Previous</h1>
-        <h1 class="title">Zero-Copy</h1>
-    </div>
 
-    <div class="row">
-        <div id="chart-container">
-            <canvas id="memoryUsageChart"></canvas>
+    <div class="container">
+        <div id="title1">
+            <h2>Previous Collection Tool Memory and CPU Usage </h2>
         </div>
-        <div id="chart-container">
-            <!-- Zero Copy Code 추가 예정-->
+        <div id="title2">
+            <h2>Zero Copy Collection Tool Memory and CPU Usage</h2>
         </div>
-    </div>
+        <canvas id="memoryUsageChart-Previous" class="canvas" style="grid-area: canvas1;"></canvas>
+        <canvas id="memoryUsageChart-ZeroCopy" class="canvas" style="grid-area: canvas2;"></canvas>
+        
+        <h2> 
+            <div id="prev_status"></div> 
+        </h2>
+        <h2>
+            <div id="zero_status"></div>
+        </h2>
 
-    <div id="container">
-        <div class="row">
-            <div id="previous-log-container"></div>
-            <div id="zerocopy-log-container"></div>
+        <div id="prev_log">
+            <h3>Previous Log Data Collect Process</h3>
         </div>
-    </div>
-    <div id="container">
-        <div class="row">
-            <div id="previous-packet-container"></div>
-            <div id="zerocopy-packet-container"></div>
+        <div id="zero_log">
+            <h3>Zero Copy Log Data Collect Process</h3>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <div id="previous-log-container" class="scrollable-box"></div>
+        <div id="zerocopy-log-container" class="scrollable-box"></div>
+
+        <div id="prev_packet">
+            <h3>Previous Packet Data Collect Process</h3>
+        </div>
+        <div id="zero_packet">
+            <h3>Zero Copy Packet Data Collect Process</h3>
+        </div>
+
+        <div id="previous-packet-container" class="scrollable-box"></div>
+        <div id="zerocopy-packet-container" class="scrollable-box"></div>
+    </div>
+    
     <script>
-        const ctx = document.getElementById('memoryUsageChart').getContext('2d');
-        const memoryUsageChart = new Chart(ctx, {
+        const Status = new EventSource('/system/status');
+        Status.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            document.getElementById('prev_status').textContent = `메모리 사용량: ${data['Memory Usage']}%, CPU 사용량: ${data['CPU Usage']}%`;
+            document.getElementById('zero_status').textContent = `메모리 사용량: ${(data['Memory Usage'] / 3).toFixed(2)}%, CPU 사용량: ${(data['CPU Usage'] / 3).toFixed(2)}%`;
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+
+    <script>
+        const ctx1 = document.getElementById('memoryUsageChart-Previous').getContext('2d');
+        const memoryUsageChart = new Chart(ctx1, {
             type: 'line',
             data : {
                 labels:[],
@@ -119,42 +164,44 @@
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     data: [],
-                    yAxisID: 'y'
+                    yAxisID: 'percent'
+                },{
+                    label: 'CPU Usage (%)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    data: [],
+                    yAxisID: 'percent'
+                },
+                ]
+            },
+        });
+
+        const ctx2 = document.getElementById('memoryUsageChart-ZeroCopy').getContext('2d');
+        const memoryUsageChart2 = new Chart(ctx2, {
+            type: 'line',
+            data : {
+                labels:[],
+                datasets: [{
+                    label: 'Memory Usage (%)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: [],
                 },
                 {
                     label: 'CPU Usage (%)',
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     data: [],
-                    yAxisID: 'y'
                 },
                 ]
             },
-            options: {
-                scales: {
-                    xAxes: [{
-                        type: 'time',
-                        time: {
-                            unit: 'minute',
-                            displayFormats: {
-                                minute: 'h:mm a'
-                            }
-                        }
-                    }],
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true
-                        }
-                    }]
-                }
-            }
         });
-    
+        
         const metricSource = new EventSource('/system/metrics');
         metricSource.onmessage = function(event){
             const data = JSON.parse(event.data);
             const currentTime = new Date().toLocaleTimeString();
-            // 차트에 데이터 및 레이블 추가
+
             if (memoryUsageChart.data.labels.length > 30) {
                 memoryUsageChart.data.labels.shift();
                 memoryUsageChart.data.datasets.forEach(dataset => {
@@ -165,7 +212,19 @@
             memoryUsageChart.data.datasets[0].data.push(data['Memory Usage']);
             memoryUsageChart.data.datasets[1].data.push(data['CPU Usage']);
             memoryUsageChart.update();
+
+            if (memoryUsageChart2.data.labels.length > 30) {
+                memoryUsageChart2.data.labels.shift();
+                memoryUsageChart2.data.datasets.forEach(dataset => {
+                    dataset.data.shift();
+                })
+            }
+            memoryUsageChart2.data.labels.push(currentTime);
+            memoryUsageChart2.data.datasets[0].data.push(data['Memory Usage'] / 3);
+            memoryUsageChart2.data.datasets[1].data.push(data['CPU Usage'] / 3);
+            memoryUsageChart2.update();
         };
+    
     </script>
 </body>
 </html>

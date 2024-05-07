@@ -49,31 +49,52 @@ def packet_handler(packet):
 
 '''
 send_logs 및 send_packets으로 buffer_to_write_buffer 대체
-'''    
-@app.route('/logs')
-def send_logs():
-    def stream():
-        while True:
-            if not log_buffer.empty():
-                event = log_buffer.get()
-                write_buffer.put(event[0])
-                yield f"data: {json.dumps({'event': event})}\n\n"
-            else:
-                time.sleep(1)
-    return Response(stream(), mimetype='text/event-stream')
+'''
+def send_logs(repeat_count=1):
+    while True:
+        event = None
+        try:
+            event = log_buffer.get(timeout=1)
+            write_buffer.put(event[0])
+            if repeat_count == 3:
+                log_buffer.put(event)
+        except queue.Empty:
+            continue
+        
+        for _ in range(repeat_count):
+            yield f"data: {json.dumps({'event': event})}\n\n"
+        time.sleep(1)
+        
+@app.route('/previous_logs')
+def send_log_previous():
+    return Response(send_logs(3), mimetype='text/event-stream')
 
-@app.route('/packets')
-def send_packets():
-    def stream():
-        while True:
-            if not network_buffer.empty():
-                event = network_buffer.get()
-                write_buffer.put(event[0])
-                yield f"data: {json.dumps({'event': event})}\n\n"
+@app.route('/zerocopy_logs')
+def send_log_zerocopy():
+    return Response(send_logs(1), mimetype='text/event-stream')
 
-            else:
-                time.sleep(1)
-    return Response(stream(), mimetype='text/event-stream')
+def send_packets(repeat_count=1):
+    while True:
+        event = None
+        try:
+            event = network_buffer.get(timeout=1)
+            write_buffer.put(event[0])
+            if repeat_count == 3:
+                network_buffer.put(event)
+        except queue.Empty:
+            continue
+        
+        for _ in range(repeat_count):
+            yield f"data: {json.dumps({'event': event})}\n\n"
+        time.sleep(1)
+        
+@app.route('/previous_packets')
+def send_packet_previous():
+    return Response(send_packets(3), mimetype='text/event-stream')
+
+@app.route('/zerocopy_packets')
+def send_packet_zerocopy():
+    return Response(send_packets(1), mimetype='text/event-stream')
 
 def db_writer():
     """Write buffer에서 DB로 데이터 이동 및 저장"""
@@ -85,11 +106,12 @@ def db_writer():
             # print(f"DB 저장: {data}, 데이터당 처리 시간: {processing_time:.9f}초")
         
         time.sleep(0.5)  # DB에 쓰기 전 간단한 딜레이
-        
+     
 '''
 자원 사용량 모니터링
 '''
 @app.route('/system/metrics')
+@app.route('/system/status')
 def system_metrics():
     def generate():
         while True:
