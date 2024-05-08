@@ -180,6 +180,14 @@
                 },
                 ]
             },
+            options: {
+                scales: {
+                    y : {
+                        suggestedMin: 0,
+                        suggestedMax: 30,
+                    }
+                }
+            }
         });
 
         const ctx2 = document.getElementById('memoryUsageChart-ZeroCopy').getContext('2d');
@@ -201,6 +209,14 @@
                 },
                 ]
             },
+            options: {
+                scales: {
+                    y : {
+                        suggestedMin: 0,
+                        suggestedMax: 25,
+                    }
+                }
+            }
         });
         
         const metricSource = new EventSource('/system/metrics');
