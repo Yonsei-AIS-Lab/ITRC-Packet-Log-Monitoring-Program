@@ -3,17 +3,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test</title>
+    <title>Packet/Log Data Collection Monitoring</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             width: 100%;
+            background: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
+            font-family: 'Roboto', sans-serif;
         }
-        h2 { text-align:center;}
-        h3 { text-align:left;}
+        h2, h3 {
+            margin: 10px 0;
+            color: white;
+            text-shadow: 2px 2px 4px #000000;
+        }
         .container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -26,43 +32,51 @@
                 "logs1 logs2"
                 "prev_packet zero_packet"
                 "packets1 packets2";
-            height: 85vh;
-            width: 48vw;
-            grid-gap: 10px;
+            height: 80vh;
+            width: 49vw;
+            grid-gap: 5px;
+            color: white;
         }
         #memoryUsageChart-Previous {
             grid-area: canvas1;
         }
-        
         #memoryUsageChart-ZeroCopy {
             grid-area: canvas2;
         }        
         .canvas{
             width: 100%;
-            height: 20vh;
+            height: 200px;
+            background-color: rgba(255, 255, 255, 1.0);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
-
         .scrollable-box {
             overflow-y: scroll;
             border: 1px solid #ccc;
-            padding: 5px;
-            height: 120px; 
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            height: 150px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border-radius: 8px;
         }
-
         #previous-log-container {
             grid-area: logs1;
         }
-        
         #zerocopy-log-container {
             grid-area: logs2;
         }
-        
         #previous-packet-container {
             grid-area: packets1;
         }
-        
         #zerocopy-packet-container {
             grid-area: packets2;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        div#prev_status, div#zero_status {
+            animation: fadeIn 1s;
         }
     </style>
 </head>
@@ -103,7 +117,6 @@
 </script>
 
 <body>
-
     <div class="container">
         <div id="title1">
             <h2>Previous Collection Tool Memory and CPU Usage </h2>
@@ -113,31 +126,26 @@
         </div>
         <canvas id="memoryUsageChart-Previous" class="canvas" style="grid-area: canvas1;"></canvas>
         <canvas id="memoryUsageChart-ZeroCopy" class="canvas" style="grid-area: canvas2;"></canvas>
-        
         <h2> 
             <div id="prev_status"></div> 
         </h2>
         <h2>
             <div id="zero_status"></div>
         </h2>
-
         <div id="prev_log">
             <h3>Previous Log Data Collect Process</h3>
         </div>
         <div id="zero_log">
             <h3>Zero Copy Log Data Collect Process</h3>
         </div>
-
         <div id="previous-log-container" class="scrollable-box"></div>
         <div id="zerocopy-log-container" class="scrollable-box"></div>
-
         <div id="prev_packet">
             <h3>Previous Packet Data Collect Process</h3>
         </div>
         <div id="zero_packet">
             <h3>Zero Copy Packet Data Collect Process</h3>
         </div>
-
         <div id="previous-packet-container" class="scrollable-box"></div>
         <div id="zerocopy-packet-container" class="scrollable-box"></div>
     </div>
@@ -164,13 +172,11 @@
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     data: [],
-                    yAxisID: 'percent'
                 },{
                     label: 'CPU Usage (%)',
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     data: [],
-                    yAxisID: 'percent'
                 },
                 ]
             },
